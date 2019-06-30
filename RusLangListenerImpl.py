@@ -1,5 +1,6 @@
 from ANTLR import RusLangListener, RusLangParser, RusLangLexer
 import antlr4 as antlr
+from antlr4.tree import Tree as t
 
 
 class RusLangListenerImpl(RusLangListener.RusLangListener):
@@ -8,11 +9,14 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
 
         self.code = ""
         self.indent_level = 0
-        self.current_level = 0
+        self.complement_for = False
 
     def addIndent(self):
+        indent_string = ""
         for i in range(0, self.indent_level):
-            self.code += "\t"
+            indent_string += "\t"
+        return indent_string
+
 
     def enterVar_type(self, ctx: RusLangParser.RusLangParser.Var_typeContext):
         pass
@@ -23,6 +27,21 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
         pass
         # Enter a parse tree produced by RusLangParser#value.
 
+    def enterListValue(self, ctx:RusLangParser.RusLangParser.ListValueContext):
+        pass
+
+    # Exit a parse tree produced by RusLangParser#listValue.
+    def exitListValue(self, ctx:RusLangParser.RusLangParser.ListValueContext):
+        pass
+
+
+    # Enter a parse tree produced by RusLangParser#listExpression.
+    def enterListExpression(self, ctx:RusLangParser.RusLangParser.ListExpressionContext):
+        pass
+
+    # Exit a parse tree produced by RusLangParser#listExpression.
+    def exitListExpression(self, ctx:RusLangParser.RusLangParser.ListExpressionContext):
+        pass
 
     def enterValue(self, ctx: RusLangParser.RusLangParser.ValueContext):
         pass
@@ -34,72 +53,45 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
         # Enter a parse tree produced by RusLangParser#varDeclaration.
 
     def enterVarDeclaration(self, ctx: RusLangParser.RusLangParser.VarDeclarationContext):
-
-        self.code += str(ctx.T_VAR_ID()) + " = "
+        pass
         # Exit a parse tree produced by RusLangParser#varDeclaration.
 
 
     def exitVarDeclaration(self, ctx: RusLangParser.RusLangParser.VarDeclarationContext):
-        self.code += "\n"
+        pass
         # Enter a parse tree produced by RusLangParser#varAssignment.
 
 
     def enterVarAssignment(self, ctx: RusLangParser.RusLangParser.VarAssignmentContext):
-        self.code += str(ctx.T_VAR_ID()) + " = "
+        pass
         # Exit a parse tree produced by RusLangParser#varAssignment.
 
 
     def exitVarAssignment(self, ctx: RusLangParser.RusLangParser.VarAssignmentContext):
-        self.code += "\n"
-        # Enter a parse tree produced by RusLangParser#arithmeticExpression.
+        pass
 
     def enterArithmeticExpression(self, ctx: RusLangParser.RusLangParser.ArithmeticExpressionContext):
-
-        if len(ctx.children) > 1:
-            if self.current_level == 0:
-                text = ctx.getText()
-                new_text = ""
-                arithmetic_tokens = "+-*/"
-                for sign in text:
-                    if sign in arithmetic_tokens:
-                        new_text += " " + sign + " "
-                        arithmetic_tokens.replace(sign, "")
-                    else:
-                        new_text += sign
-
-                self.code += new_text
-        self.current_level += 1
+        pass
 
         # Exit a parse tree produced by RusLangParser#arithmeticExpression.
 
     def exitArithmeticExpression(self, ctx: RusLangParser.RusLangParser.ArithmeticExpressionContext):
-        self.current_level -= 1
+        pass
 
         # Enter a parse tree produced by RusLangParser#stringExpression.
 
     def enterStringExpression(self, ctx: RusLangParser.RusLangParser.StringExpressionContext):
-        if len(ctx.children) > 1:
-            if self.current_level == 0:
-                text = ctx.getText()
-                text = text.replace("++", " + ")
+        pass
 
-                self.code += text
-        self.current_level += 1
         # Exit a parse tree produced by RusLangParser#stringExpression.
 
     def exitStringExpression(self, ctx: RusLangParser.RusLangParser.StringExpressionContext):
-        self.current_level -= 1
+        pass
         # Enter a parse tree produced by RusLangParser#booleanExpression.
 
     def enterBooleanExpression(self, ctx: RusLangParser.RusLangParser.BooleanExpressionContext):
-        text = ctx.getText()
-        text = text.replace("или", " or ")
-        text = text.replace("и", " and ")
-        text = text.replace("правда", "true")
-        text = text.replace("ложный", "false")
-        text = text.replace("не", " not ")
+        pass
 
-        self.code += text
         # Exit a parse tree produced by RusLangParser#booleanExpression.
 
     def exitBooleanExpression(self, ctx: RusLangParser.RusLangParser.BooleanExpressionContext):
@@ -254,3 +246,64 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
 
     def exitFullValueList(self, ctx: RusLangParser.RusLangParser.FullValueListContext):
         pass
+
+    def visitTerminal(self, node:t.TerminalNode):
+
+        ttype = node.getSymbol().type
+        parser = RusLangParser.RusLangParser
+
+        immutable_values = [parser.T_VAR_ID, parser.T_NUMBER_VAL, parser.T_STRING_VAL, parser.T_LSQUARE,
+                            parser.T_RSQUARE, parser.T_LBRACKET, parser.T_RBRACKET]
+        immutable_ops = [parser.T_PLUS, parser.T_MINUS, parser.T_MUL, parser.T_DIV, parser.T_G, parser.T_L,
+                         parser.T_GEQ, parser.T_LEQ]
+        mutables = {
+            parser.T_DOTS: ":\n",
+            parser.T_END_LINE: "\n",
+            parser.T_POW: " ** ",
+            parser.T_CONCAT: " + ",
+            parser.T_ASSIGN: " = ",
+            parser.T_EQ: " == ",
+            parser.T_NEQ: " != ",
+            parser.T_COMMA: ", ",
+            parser.T_NOT: " not ",
+            parser.T_AND: " and ",
+            parser.T_OR: " or ",
+            parser.T_TRUE: "True",
+            parser.T_FALSE: "False",
+            parser.T_WHILE: "while ",
+            parser.T_PRINT: "print",
+            parser.T_FOR: "for ",
+            parser.T_FROM: " in range (",
+            parser.T_TO: ", ",
+            parser.T_BREAK: "break",
+            parser.T_CONTINUE: "continue",
+            parser.T_RETURN: "return ",
+            parser.T_FUNCTION: "def "
+        }
+
+        if ttype in immutable_ops:
+            self.code += " " + node.getText() + " "
+        if ttype in immutable_values:
+            self.code += node.getText()
+        if ttype in mutables.keys():
+
+            if ttype == parser.T_DOTS and self.complement_for:
+                self.complement_for = False
+                self.code += ")"
+
+            self.code += mutables[ttype]
+
+            if ttype == parser.T_FOR:
+                self.complement_for = True
+            if ttype == parser.T_DOTS:
+                self.indent_level += 1
+                self.code += self.addIndent()
+
+            if ttype == parser.T_END_LINE:
+                self.code += self.addIndent()
+        if ttype == parser.T_END:
+            self.indent_level -= 1
+
+
+
+
