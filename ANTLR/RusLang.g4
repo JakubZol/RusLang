@@ -8,7 +8,7 @@ T_END_LINE      :('.');
 T_NUMBER        :('номер');
 T_STRING        :('надпись');
 T_BOOL          :('логический');
-T_VOID          :('пустой');
+T_LIST          :('список');
 T_IF            :('если');
 T_ELSE          :('еще');
 T_ELIF          :('иначе_если');
@@ -46,10 +46,10 @@ T_RBRACKET      :')';
 T_LSQUARE       :'[';
 T_RSQUARE       :']';
 T_COMMA         :',';
-T_COMMENT       :('#'[a-zA-Z_ąćęłńóśźżБбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9 \t;]*[\n] | '#{'[a-zA-Z_ąćęłńóśźżБбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9 \t\n;]*'}#');
+T_COMMENT       :([#][a-zA-Z_ąćęłńóśźżАаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9 \t;]*[\n] | '#{'[a-zA-Z_ąćęłńóśźżБбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9 \t\n;]*'}#');
 T_NUMBER_VAL    :[-]?[0-9]+([.][0-9]+)?;
-T_STRING_VAL    :'"'[a-zA-Z_ąćęłńóśźżБбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9 \t\n;]*'"';
-T_VAR_ID        :[a-zA-Z_БбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя][a-zA-Z0-9_БбвГгДдЁёЖжЗзИиЙйкЛлмноПптУФфЦцЧчШшЩщЪъЫыЬьЭэЮюЯя]*;
+T_STRING_VAL    :'"'[a-zA-Z_ąćęłńóśźżАаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя0-9!? \t\n;]*'"';
+T_VAR_ID        :[a-zA-Z_АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя][a-zA-Z0-9_АаБбВвГгДдЕеЁёЖжЗзИиЙйКкЛлМмНнОоПпРрСсТтУуФфХхЦцЧчШшЩщЪъЫыЬьЭэЮюЯя]*;
 T_WHITESPACE    :(' ' | '\t' | '\n') -> skip;
 
 
@@ -57,7 +57,7 @@ T_WHITESPACE    :(' ' | '\t' | '\n') -> skip;
 /*GRAMMAR*/
 
 var_type:
-    T_NUMBER | T_STRING | T_BOOL;
+    T_NUMBER | T_STRING | T_BOOL | T_LIST;
 
 listValue:
     T_LSQUARE valueList T_RSQUARE;
@@ -66,7 +66,7 @@ listExpression:
     listValue | listExpression T_CONCAT listValue;
 
 value:
-    stringExpression | booleanExpression | arithmeticExpression | listExpression |T_VAR_ID;
+    stringExpression | booleanExpression | arithmeticExpression | listExpression |T_VAR_ID | functionCall;
 
 varDeclaration:
     var_type T_VAR_ID T_ASSIGN value;
@@ -80,17 +80,17 @@ arithmeticExpression:
     T_LBRACKET arithmeticExpression T_RBRACKET |
     arithmeticExpression (T_MUL | T_DIV) arithmeticExpression |
     arithmeticExpression (T_MINUS | T_PLUS) arithmeticExpression |
-    T_NUMBER_VAL | T_VAR_ID;
+    T_NUMBER_VAL | T_VAR_ID | functionCall;
 
 
 stringExpression:
-    stringExpression T_CONCAT stringExpression | T_STRING_VAL | T_VAR_ID | T_LBRACKET stringExpression T_RBRACKET;
+    stringExpression T_CONCAT stringExpression | T_STRING_VAL | T_VAR_ID | T_LBRACKET stringExpression T_RBRACKET | functionCall;
 
 
 booleanExpression:
     booleanExpression (T_AND | T_OR) booleanExpression | stringExpression (T_EQ | T_NEQ) stringExpression |
     arithmeticExpression (T_G | T_L | T_LEQ | T_GEQ | T_EQ | T_NEQ) arithmeticExpression | T_FALSE | T_TRUE |
-    T_VAR_ID | T_NOT booleanExpression | T_LBRACKET booleanExpression T_RBRACKET;
+    T_VAR_ID | T_NOT booleanExpression | T_LBRACKET booleanExpression T_RBRACKET | functionCall;
 
 
 printExpression:
@@ -99,7 +99,7 @@ printExpression:
 
 expression:
     varDeclaration | varAssignment | printExpression | forLoopExpression | whileLoopExpression |
-    conditionalExpression T_END | functionCall | functionDeclaration;
+    conditionalExpression T_END | functionCall | functionDeclaration | T_RETURN value;
 
 
 code:
@@ -123,28 +123,25 @@ whileLoopExpression:
 loopCode:
     code | loopCode (T_BREAK | T_CONTINUE) T_END_LINE loopCode |
     loopCode (T_BREAK | T_CONTINUE) T_END_LINE |
-    (T_BREAK | T_CONTINUE) T_END_LINE loopCode;
+    (T_BREAK | T_CONTINUE) T_END_LINE loopCode | (T_BREAK | T_CONTINUE) T_END_LINE;
 
 
 conditionalExpression:
-    T_IF booleanExpression T_DOTS code |  T_IF booleanExpression T_DOTS code elifExpression elseExpression |
-    T_IF booleanExpression T_DOTS code elifExpression | T_IF booleanExpression T_DOTS code elseExpression;
+    T_IF booleanExpression T_DOTS (code|loopCode) |  T_IF booleanExpression T_DOTS (code|loopCode) elifExpression elseExpression |
+    T_IF booleanExpression T_DOTS (code|loopCode) elifExpression | T_IF booleanExpression T_DOTS (code|loopCode) elseExpression;
 
 
 elifExpression:
-    T_ELIF booleanExpression T_DOTS code | elifExpression T_ELIF booleanExpression T_DOTS code;
+    T_ELIF booleanExpression T_DOTS (code|loopCode) | elifExpression T_ELIF booleanExpression T_DOTS (code|loopCode);
 
 
 elseExpression:
-    T_ELSE T_DOTS code;
+    T_ELSE T_DOTS (loopCode|code);
 
 
 functionDeclaration:
     T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_RETURN value T_END_LINE T_END |
-    T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_END |
-    T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS T_RETURN value T_END_LINE T_END;
-
-
+     T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_END;
 
 argList:
     var_type T_VAR_ID | argList T_COMMA var_type T_VAR_ID;

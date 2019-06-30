@@ -17,6 +17,9 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
             indent_string += "\t"
         return indent_string
 
+    def deleteIndent(self, i):
+        self.code = self.code[:-i]
+
 
     def enterVar_type(self, ctx: RusLangParser.RusLangParser.Var_typeContext):
         pass
@@ -108,28 +111,6 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
 
     def enterExpression(self, ctx: RusLangParser.RusLangParser.ExpressionContext):
         pass
-        # text = ctx.getText()
-        # if ctx.varDeclaration() is not None or ctx.varAssignment() is not None:
-        #     text = text.replace("<-", "=")
-        #     text = text.replace("номер", "")
-        #     text = text.replace("надпись", "")
-        #     text = text.replace("логический", "")
-        #     text = text.replace('правда', "true")
-        #     text = text.replace("ложный", "false")
-        # elif ctx.printExpression() is not None:
-        #     text = text.replace('показ', 'print')
-        # elif ctx.forLoopExpression() is not None:
-        #     text = text.replace('для', 'for ')
-        #     text = text.replace('от', ' in range(')
-        #     text = text.replace('до', ',')
-        #     text = text.replace(":", "):\n")
-        #     text = text.split(":")[0] + ":"
-        # elif ctx.whileLoopExpression() is not None:
-        #     text = text.replace('пока', 'while ')
-        #     text = text.replace(":", "):\n")
-        #     text = text.split(":")[0] + ":"
-        #
-        # self.code += text + "\n"
 
         # Exit a parse tree produced by RusLangParser#expression.
     def exitExpression(self, ctx: RusLangParser.RusLangParser.ExpressionContext):
@@ -278,7 +259,10 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
             parser.T_BREAK: "break",
             parser.T_CONTINUE: "continue",
             parser.T_RETURN: "return ",
-            parser.T_FUNCTION: "def "
+            parser.T_FUNCTION: "def ",
+            parser.T_IF: "if ",
+            parser.T_ELIF: "elif ",
+            parser.T_ELSE: "else"
         }
 
         if ttype in immutable_ops:
@@ -290,6 +274,9 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
             if ttype == parser.T_DOTS and self.complement_for:
                 self.complement_for = False
                 self.code += ")"
+            if ttype == parser.T_ELIF or ttype == parser.T_ELSE:
+                self.indent_level -= 1
+                self.deleteIndent(1)
 
             self.code += mutables[ttype]
 
@@ -303,6 +290,8 @@ class RusLangListenerImpl(RusLangListener.RusLangListener):
                 self.code += self.addIndent()
         if ttype == parser.T_END:
             self.indent_level -= 1
+        if ttype == parser.T_COMMENT:
+            self.code += node.getText() + "\n"
 
 
 
