@@ -17,6 +17,24 @@ class RusLangListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by RusLangParser#listValue.
+    def enterListValue(self, ctx:RusLangParser.ListValueContext):
+        pass
+
+    # Exit a parse tree produced by RusLangParser#listValue.
+    def exitListValue(self, ctx:RusLangParser.ListValueContext):
+        pass
+
+
+    # Enter a parse tree produced by RusLangParser#listExpression.
+    def enterListExpression(self, ctx:RusLangParser.ListExpressionContext):
+        pass
+
+    # Exit a parse tree produced by RusLangParser#listExpression.
+    def exitListExpression(self, ctx:RusLangParser.ListExpressionContext):
+        pass
+
+
     # Enter a parse tree produced by RusLangParser#value.
     def enterValue(self, ctx:RusLangParser.ValueContext):
         pass

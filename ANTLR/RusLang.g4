@@ -15,7 +15,7 @@ T_ELIF          :('иначе_если');
 T_FOR           :('для');
 T_FROM          :('от');
 T_TO            :('до');
-T_WHILE         :('пока');
+T_WHILE         :('цикл');
 T_NOT           :('не');
 T_AND           :('и');
 T_OR            :('или');
@@ -37,7 +37,7 @@ T_ASSIGN        :'<-';
 T_G             :'>';
 T_L             :'<';
 T_EQ            :'=';
-T_GEQ           :'=>';
+T_GEQ           :'>=';
 T_LEQ           :'<=';
 T_NEQ           :'/=';
 T_DOTS          :':';
@@ -59,8 +59,14 @@ T_WHITESPACE    :(' ' | '\t' | '\n') -> skip;
 var_type:
     T_NUMBER | T_STRING | T_BOOL;
 
+listValue:
+    T_LSQUARE valueList T_RSQUARE;
+
+listExpression:
+    listValue | listExpression T_CONCAT listValue;
+
 value:
-    stringExpression | booleanExpression | arithmeticExpression | T_VAR_ID;
+    stringExpression | booleanExpression | arithmeticExpression | listExpression |T_VAR_ID;
 
 varDeclaration:
     var_type T_VAR_ID T_ASSIGN value;
@@ -115,7 +121,9 @@ whileLoopExpression:
 
 
 loopCode:
-    code | loopCode (T_BREAK | T_CONTINUE) loopCode;
+    code | loopCode (T_BREAK | T_CONTINUE) T_END_LINE loopCode |
+    loopCode (T_BREAK | T_CONTINUE) T_END_LINE |
+    (T_BREAK | T_CONTINUE) T_END_LINE loopCode;
 
 
 conditionalExpression:
@@ -132,8 +140,10 @@ elseExpression:
 
 
 functionDeclaration:
-    T_FUNCTION T_LBRACKET var_type T_RBRACKET T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_RETURN value T_END |
-    T_FUNCTION T_LBRACKET T_VOID T_RBRACKET T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_END ;
+    T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_RETURN value T_END_LINE T_END |
+    T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS code T_END |
+    T_FUNCTION T_VAR_ID T_LBRACKET fullArgList T_RBRACKET T_DOTS T_RETURN value T_END_LINE T_END;
+
 
 
 argList:
